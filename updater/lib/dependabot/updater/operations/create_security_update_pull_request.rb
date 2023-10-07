@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
@@ -40,8 +41,15 @@ module Dependabot
         # risk, so we'll maintain the interface as-is for now, but this is
         # something we should make much more intentional in future.
         def perform
-          Dependabot.logger.info("Starting update job for #{job.source.repo}")
-          dependency_snapshot.job_dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
+          Dependabot.logger.info("Starting security update job for #{job.source.repo}")
+
+          target_dependencies = dependency_snapshot.job_dependencies
+
+          if target_dependencies.empty?
+            record_security_update_dependency_not_found
+          else
+            target_dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
+          end
         end
 
         private
@@ -90,7 +98,7 @@ module Dependabot
           # The current version is still vulnerable and  Dependabot can't find a
           # published or compatible non-vulnerable version, this can happen if the
           # fixed version hasn't been published yet or the published version isn't
-          # compatible with the current enviroment (e.g. python version) or
+          # compatible with the current environment (e.g. python version) or
           # version (uses a different version suffix for gradle/maven)
           return record_security_update_not_found(checker) if checker.up_to_date?
 
@@ -194,11 +202,11 @@ module Dependabot
           latest_version = checker.latest_version&.to_s
           return false if latest_version.nil?
 
-          job.existing_pull_requests.
-            select { |pr| pr.count == 1 }.
-            map(&:first).
-            select { |pr| pr.fetch("dependency-name") == checker.dependency.name }.
-            any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
+          job.existing_pull_requests
+             .select { |pr| pr.count == 1 }
+             .map(&:first)
+             .select { |pr| pr.fetch("dependency-name") == checker.dependency.name }
+             .any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
         end
 
         def existing_pull_request(updated_dependencies)

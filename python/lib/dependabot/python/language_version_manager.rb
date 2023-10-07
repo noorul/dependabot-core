@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/logger"
@@ -8,10 +9,10 @@ module Dependabot
     class LanguageVersionManager
       # This list must match the versions specified at the top of `python/Dockerfile`
       PRE_INSTALLED_PYTHON_VERSIONS = %w(
-        3.11.4
-        3.10.12
-        3.9.17
-        3.8.17
+        3.11.5
+        3.10.13
+        3.9.18
+        3.8.18
       ).freeze
 
       def initialize(python_requirement_parser:)
@@ -23,7 +24,7 @@ module Dependabot
         return if SharedHelpers.run_shell_command("pyenv versions").include?(" #{python_major_minor}.")
 
         SharedHelpers.run_shell_command(
-          "tar xzf /usr/local/.pyenv/#{python_major_minor}.tar.gz -C /usr/local/.pyenv/"
+          "tar -axf /usr/local/.pyenv/versions/#{python_version}.tar.zst -C /usr/local/.pyenv/versions"
         )
       end
 
@@ -61,10 +62,8 @@ module Dependabot
         return version if version
 
         # Otherwise we have to raise
-        msg = "Dependabot detected the following Python requirement for your project: '#{python_requirement_string}'." \
-              "\n\nCurrently, the following Python versions are supported in Dependabot: " \
-              "#{PRE_INSTALLED_PYTHON_VERSIONS.map { |x| x.gsub(/\.\d+$/, '.*') }.join(', ')}."
-        raise DependencyFileNotResolvable, msg
+        supported_versions = PRE_INSTALLED_PYTHON_VERSIONS.map { |x| x.gsub(/\.\d+$/, ".*") }.join(", ")
+        raise ToolVersionNotSupported.new("Python", python_requirement_string, supported_versions)
       end
 
       def user_specified_python_version

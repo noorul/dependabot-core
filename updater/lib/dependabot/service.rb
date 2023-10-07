@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "raven"
@@ -46,6 +47,10 @@ module Dependabot
     def record_update_job_error(error_type:, error_details:, dependency: nil)
       @errors << [error_type.to_s, dependency]
       client.record_update_job_error(error_type: error_type, error_details: error_details)
+    end
+
+    def record_update_job_unknown_error(error_type:, error_details:)
+      client.record_update_job_unknown_error(error_type: error_type, error_details: error_details)
     end
 
     def update_dependency_list(dependency_snapshot:)

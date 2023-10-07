@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/utils"
@@ -74,6 +75,20 @@ module Dependabot
   #####################
   # File level errors #
   #####################
+
+  class ToolVersionNotSupported < DependabotError
+    attr_reader :tool_name, :detected_version, :supported_versions
+
+    def initialize(tool_name, detected_version, supported_versions)
+      @tool_name = tool_name
+      @detected_version = detected_version
+      @supported_versions = supported_versions
+
+      msg = "Dependabot detected the following #{tool_name} requirement for your project: '#{detected_version}'." \
+            "\n\nCurrently, the following #{tool_name} versions are supported in Dependabot: #{supported_versions}."
+      super(msg)
+    end
+  end
 
   class DependencyFileNotFound < DependabotError
     attr_reader :file_path

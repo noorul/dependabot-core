@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/update_checkers"
@@ -65,9 +66,11 @@ module Dependabot
                   # Ideally we would like to do any upgrade that migrates away from the vulnerability
                   # but this method can only return a single requirement udate.
                   breaking_changes = updates.filter { |d| d["previousConstraint"] != d["constraintBumpedIfNeeded"] }
-                  if breaking_changes.size > 1
-                    raise "Cannot upgrade from vulnerability without unlocking other packages."
-                  end
+
+                  # This security update would require unlocking other packages, which is not currently supported.
+                  # Because of that, return original requirements, so that no requirements are actually updated and
+                  # the error bubbles up as security_update_not_possible to the user.
+                  return dependency.requirements if breaking_changes.size > 1
 
                   updates.find { |u| u["name"] == dependency.name }
                 else
@@ -75,8 +78,8 @@ module Dependabot
                 end
         return unless entry
 
-        parse_updated_dependency(entry, requirements_update_strategy: resolved_requirements_update_strategy).
-          requirements
+        parse_updated_dependency(entry, requirements_update_strategy: resolved_requirements_update_strategy)
+          .requirements
       end
 
       private
